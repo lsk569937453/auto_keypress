@@ -62,7 +62,6 @@ jobs:
       - name: Build silverwind
         continue-on-error: true
         run: |
-          cd rust-proxy
           cargo clean
           cargo build --release
 
