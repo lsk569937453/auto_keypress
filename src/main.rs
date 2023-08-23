@@ -4,7 +4,6 @@ extern crate lazy_static;
 extern crate anyhow;
 mod auto;
 use crate::auto::key_press::press;
-use crate::auto::key_press::test;
 use anyhow::Ok;
 use clap::Parser;
 use pinyin::{ToPinyin, ToPinyinMulti};
