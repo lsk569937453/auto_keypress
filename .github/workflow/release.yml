@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  style:
+    name: Check Style
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+          profile: minimal
+          override: true
+
+      - name: cargo fmt -- --check
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    strategy: 
+      matrix:
+        target: [x86_64-unknown-linux-gnu,x86_64-pc-windows-gnu,x86_64-unknown-linux-musl]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          target: ${{ matrix.target }}
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          sudo apt update &&sudo apt -y upgrade &&sudo apt install pkg-config libfreetype6-dev libfontconfig1-dev mingw-w64
+          export PKG_CONFIG_PATH=/usr/local/lib/x86_64-linux-gnu/pkgconfig
+          export PKG_CONFIG_SYSROOT_DIR=/usr/x86_64-w64-mingw32
+          # pkg-config --variable pc_path pkg-config
+      - name: Build target
+        if: ${{ matrix.target!='x86_64-unknown-linux-musl' }}
+        shell: bash
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+      - name: Build target of musl
+        if: ${{ matrix.target=='x86_64-unknown-linux-musl' }}
+        shell: bash
+        run: |
+          PKG_CONFIG_SYSROOT_DIR=/usr/x86_64-w64-mingw32 cargo build --release --target ${{ matrix.target }}
+      - name: Package
+        shell: bash
+        run: |
+          #strip target/${{ matrix.target }}/release/keypress
+          cd target/${{ matrix.target }}/release          
+          tar --exclude=keypress.d -czvf ../../../keypress-${{ matrix.target }}.tar.gz keypress*
+          cd -
+      - name: Publish
+        uses: softprops/action-gh-release@v1
+        # TODO: if any of the build step fails, the release should be deleted.
+        with:
+            files: 'keypress*'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
