@@ -68,4 +68,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: auto_keypress
-          path: target/release/auto_keypress # or path/to/artifactsilverwind
+          path: target/release/auto_keypress.exe # or path/to/artifactsilverwind
